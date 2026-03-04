@@ -1,60 +1,101 @@
-#define RCC_APB2PCENR               (*(volatile unsigned int*)0x40021018)   // PB2 Peripheral Clock Enable Register
+#define RCC_CTLR_BASE               0x40021000
+#define RCC_CTLR                    (*(volatile unsigned int*)(RCC_CTLR_BASE + 0x00))   // Clock control register
+#define RCC_CTLR_PLLON              (0b1 << 24)     // PLL clock enable control bit.  Enables the PLL clock
+
+#define RCC_CFGR0                   (*(volatile unsigned int*)(RCC_CTLR_BASE + 0x04))   // Clock configuration register 0
+#define RCC_CFGR0_HPRE_MASK         ~(0xF << 4)     // Mask HB clock source prescaler control.
+#define RCC_CFGR0_HPRE              (0x0 << 4)      // Prescaler off
+#define RCC_CFG0_SW                 (0b10 << 0)     // Select the system clock source. PLL output as system clock
+
+#define RCC_APB2PCENR               (*(volatile unsigned int*)(RCC_CTLR_BASE + 0x18))   // PB2 Peripheral Clock Enable Register
 #define RCC_APB2PCENR_USART1EN      (0b1 << 14)     // USART1 interface clock enable bit
 #define RCC_APB2PCENR_IOPDRST       (0b1 << 5)      // PD port module reset control for I/O.
-#define RCC_APB2PCENR_AFIORST       (0b1 << 0)      // I/O auxiliary function module reset control.
+
+
+#define USART_PD_TX                  5              // USART TX PD5
+
+#define GPIOD_CFGLR                 (*(volatile unsigned int*)0x40011400)   // PD port configuration register low
+#define GPIOD_CFGLR_TX_MASK         ~(0xF << (4 * USART_PD_TX))             // Mask MODE5 and CNF5
+#define GPIOD_CFGLR_TX_MODE         0b01            // Output mode, maximum speed 10MHz
+#define GPIOD_CFGLR_TX_CNF          0b10            // Multiplexed function push-pull output mode.
+#define GPIOD_CFGLR_TX_SET          ((GPIOD_CFGLR_TX_CNF | GPIOD_CFGLR_TX_MODE) << (4 * USART_PD_TX))
+
 
 #define USART_BASE                  0x40013800
 #define USART_STAT                  (*(volatile unsigned int*)(USART_BASE + 0x00)) // USART status register                
-#define USART_STAT_TXE_MASK         0b1
-#define USART_DATA                  (*(volatile unsigned int*)(USART_BASE + 0x04)) // USART data register
-#define USART_BRR                   (*(volatile unsigned int*)(USART_BASE + 0x08)) // USART baudrate register
-#define USART_BRR_DIVM(M)           (M << 4)            // The integer part of the dividing factor of the frequency divider. 
-#define USART_BRR_DIVF(F)           (F << 0)            // The actional part of the dividing factor of the frequency divider. 
-#define USART_CTRL1                 (*(volatile unsigned int*)(USART_BASE + 0x0C)) // USART control register 1
-#define USART_CTRL1_M               (0b1 << 12)         // Word long bit
-#define USART_CTRL1_TE              (0b1 << 3)          // Transmitter enable
-#define USART_CTRL2                 (*(volatile unsigned int*)(USART_BASE + 0x10)) // USART control register 2
-#define USART_CTRL2_STOP_MASK       ~(0xC << 12)        // MASK STOP bits 
-#define USART_CTRL2_STOP            (0b00 << 12)        // STOP bits
-#define USART_CTRL3                 (*(volatile unsigned int*)(USART_BASE + 0x14)) // USART control register 3
-#define USART_GPR                   (*(volatile unsigned int*)(USART_BASE + 0x18)) // USART potection time and prescaler register
+#define USART_STAT_TC               (0b1 << 6)      // Send completion flag
 
+#define USART_DATA                  (*(volatile unsigned int*)(USART_BASE + 0x04)) // USART data register
+
+#define USART_BRR                   (*(volatile unsigned int*)(USART_BASE + 0x08)) // USART baudrate register
+#define USART_BRR_DIVM(M)           (M << 4)        // The integer part of the dividing factor of the frequency divider. 
+#define USART_BRR_DIVF(F)           (F << 0)        // The actional part of the dividing factor of the frequency divider. 
+
+#define USART_CTRL1                 (*(volatile unsigned int*)(USART_BASE + 0x0C)) // USART control register 1
+#define USART_CTRL1_UE_MASK         ~(0b1 << 13)    // Mask USART enable bit
+#define USART_CTRL1_UE_E            (0b1 << 13)     // USART enable bit enable
+#define USART_CTRL1_UE_C            (0b0 << 13)     // USART enable bit clear   
+#define USART_CTRL1_M               (0b1 << 12)     // Word long bit
+#define USART_CTRL1_TE              (0b1 << 3)      // Transmitter enable
+
+#define USART_CTRL2                 (*(volatile unsigned int*)(USART_BASE + 0x10)) // USART control register 2
+#define USART_CTRL2_STOP_MASK       ~(0xC << 12)    // Mask STOP bits 
+#define USART_CTRL2_STOP            (0b00 << 12)    // STOP bits
+
+static const unsigned char data_s = 'w';
 
 int main(void) {
+    
+    RCC_CFGR0 = (RCC_CFGR0 & RCC_CFGR0_HPRE_MASK) | RCC_CFGR0_HPRE;
+    RCC_CFGR0 |= RCC_CFG0_SW;
 
-    RCC_APB2PCENR |= (RCC_APB2PCENR_USART1EN | RCC_APB2PCENR_IOPDRST | RCC_APB2PCENR_AFIORST);
+    RCC_CTLR |= RCC_CTLR_PLLON;
+
+    RCC_APB2PCENR |= (RCC_APB2PCENR_USART1EN | RCC_APB2PCENR_IOPDRST);
+
+
+    GPIOD_CFGLR = (GPIOD_CFGLR & GPIOD_CFGLR_TX_MASK) | GPIOD_CFGLR_TX_SET;
 
     USART_BRR = (USART_BRR_DIVM(0xC) | USART_BRR_DIVF(0xF));
 
     USART_CTRL1 |= (USART_CTRL1_M | USART_CTRL1_TE);
 
     USART_CTRL2 = (USART_CTRL2 & USART_CTRL2_STOP_MASK) | USART_CTRL2_STOP;
-   
+
+    USART_CTRL1 = (USART_CTRL1 & USART_CTRL1_UE_MASK) | USART_CTRL1_UE_E;
+  
     while(1){
+       
+        //while(!(USART_STAT & USART_STAT_TC));
+        //USART_DATA = data_s;
     }
 
 }
 
-
 /*
-UART_write(const char *buf, int size)
-{
-	int rem = size;
-	for(int i = 0; i < size; i++)
-	{
-		UART_putc(*buf++);
-	    rem--;
-	}
-	return rem;
-}
+RCC_APB2PCENR = 0b 00000000 00000000 01011010 00110101;
+> wlink dump 0x40021018 4
+> 35 5a 00 00
+                   00000000 00000000 01011010 00110101
+                                      (0x5a)   (0x35)
+*/                                     
 
-void UART_putc(uint8_t data)
+//#define GPIOD_CFGLR_RX_MASK         ~(0xF << (4 * USART_PD_RX))             // Mask MODE6 and CNF6
+//#define GPIOD_CFGLR_RX_MODE         0b00            // Output mode, maximum speed 10MHz
+//#define GPIOD_CFGLR_RX_CNF          0b00            // Universal push-pull output mode
+
+
+/*void echoCharacterUSART()
 {
-    uint8_t tmp8;    
-    tmp8  = (uart_txHead+ 1) & UART_TX_BF_MASK;
-    while (tmp8 == uart_txTail);
-    uart_tx_bf[tmp8] = data;
-	uart_txHead = tmp8;
-	USART1->CTLR1 |= UART_IT_TXE_ENABLE;
+    if(USART_GetFlagStatus(USART1, USART_FLAG_RXNE) != RESET)
+    {
+        receivedData = (USART_ReceiveData(USART1));
+        USART_SendData(USART1, receivedData);
+    }
+
+    if(USART_GetFlagStatus(USART1, USART_FLAG_TXE) != RESET)
+    {
+       
+    }
 }
 */
