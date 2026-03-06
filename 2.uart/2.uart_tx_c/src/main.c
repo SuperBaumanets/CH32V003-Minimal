@@ -1,5 +1,5 @@
 #define RCC_CTLR_BASE               0x40021000
-#define RCC_CTLR                    (*(volatile unsigned int*)(RCC_CTLR_BASE + 0x00))   // Clock control register
+#define RCC_CTLR                    (*((volatile unsigned int*)(RCC_CTLR_BASE + 0x00)))   // Clock control register
 #define RCC_CTLR_PLLON              (0b1 << 24)     // PLL clock enable control bit.  Enables the PLL clock
 
 #define RCC_CFGR0                   (*(volatile unsigned int*)(RCC_CTLR_BASE + 0x04))   // Clock configuration register 0
@@ -34,40 +34,46 @@
 #define USART_CTRL1                 (*(volatile unsigned int*)(USART_BASE + 0x0C)) // USART control register 1
 #define USART_CTRL1_UE_MASK         ~(0b1 << 13)    // Mask USART enable bit
 #define USART_CTRL1_UE_E            (0b1 << 13)     // USART enable bit enable
-#define USART_CTRL1_UE_C            (0b0 << 13)     // USART enable bit clear   
-#define USART_CTRL1_M               (0b1 << 12)     // Word long bit
-#define USART_CTRL1_TE              (0b1 << 3)      // Transmitter enable
+#define USART_CTRL1_UE_C            (0b0 << 13)     // USART enable bit clear
+#define USART_CTRL1_M_MASK         ~(0b1 << 12)     // Mask USART enable bit   
+#define USART_CTRL1_M               (0b0 << 12)     // Word long bit. 8 data bits. 
+#define USART_CTRL1_TCIE            (0b1 << 6)      // TXE interrupt enable
+#define USART_CTRL1_TXE             (0b1 << 3)      // Transmitter enable
 
 #define USART_CTRL2                 (*(volatile unsigned int*)(USART_BASE + 0x10)) // USART control register 2
 #define USART_CTRL2_STOP_MASK       ~(0xC << 12)    // Mask STOP bits 
 #define USART_CTRL2_STOP            (0b00 << 12)    // STOP bits
 
-static const unsigned char data_s = 'w';
+//static const unsigned char data_s = 'w';
 
 int main(void) {
     
     RCC_CFGR0 = (RCC_CFGR0 & RCC_CFGR0_HPRE_MASK) | RCC_CFGR0_HPRE;
-    RCC_CFGR0 |= RCC_CFG0_SW;
 
     RCC_CTLR |= RCC_CTLR_PLLON;
 
-    RCC_APB2PCENR |= (RCC_APB2PCENR_USART1EN | RCC_APB2PCENR_IOPDRST);
+    while(!(RCC_CTLR & (1 << 25)));
+    RCC_CFGR0 |= RCC_CFG0_SW;
+
+    RCC_APB2PCENR = (RCC_APB2PCENR_USART1EN | RCC_APB2PCENR_IOPDRST);
 
 
     GPIOD_CFGLR = (GPIOD_CFGLR & GPIOD_CFGLR_TX_MASK) | GPIOD_CFGLR_TX_SET;
 
-    USART_BRR = (USART_BRR_DIVM(0xC) | USART_BRR_DIVF(0xF));
+    //USART_BRR = (USART_BRR_DIVM(0xC) | USART_BRR_DIVF(0xF));
+    USART_BRR = 39999;
 
-    USART_CTRL1 |= (USART_CTRL1_M | USART_CTRL1_TE);
+    USART_CTRL1 = (USART_CTRL1 & USART_CTRL1_M_MASK) | USART_CTRL1_M;
+    USART_CTRL1 |= USART_CTRL1_TXE | USART_CTRL1_UE_E;
 
-    USART_CTRL2 = (USART_CTRL2 & USART_CTRL2_STOP_MASK) | USART_CTRL2_STOP;
+    //USART_CTRL2 = (USART_CTRL2 & USART_CTRL2_STOP_MASK) | USART_CTRL2_STOP;
 
-    USART_CTRL1 = (USART_CTRL1 & USART_CTRL1_UE_MASK) | USART_CTRL1_UE_E;
+    //USART_CTRL1 = (USART_CTRL1 & USART_CTRL1_UE_MASK) | USART_CTRL1_UE_E;
   
     while(1){
        
         //while(!(USART_STAT & USART_STAT_TC));
-        //USART_DATA = data_s;
+        //USART_DATA = 0xffffffff;
     }
 
 }
