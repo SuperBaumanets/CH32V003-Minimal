@@ -6,8 +6,9 @@
 #define RCC_CTLR_PLLON              (0b1 << 24)     // PLL clock enable control bit.  Enables the PLL clock
 #define RCC_CTLR_PLLOFF             (0b0 << 24)     // PLL clock enable control bit.  Turn off the PLL clock
 
-#define RCC_CTLR_PLLRDY             (0b1 << 25)     // PLL clock-ready lock flag bit.
-
+#define RCC_CTRL_PLLRDY             (0b1 << 25)     // PLL clock-ready lock flag bit.
+#define RCC_CTRL_HSERDY             (0b1 << 17)     // External high-speed crystal oscillation stabilization ready
+#define RCC_CTRL_HSIRDY             (0b1 << 1)      // Internal high-speed clock (24MHz) Stable Ready
 
 #define RCC_CFGR0                   (*(volatile unsigned int*)(RCC_CTLR_BASE + 0x04))   // Clock configuration register 0
 
@@ -19,6 +20,8 @@
 
 #define RCC_CFGR0_HPRE_MASK         ~(0xF << 4)     // Mask HB clock source prescaler control.
 #define RCC_CFGR0_HPRE              (0xb0000 << 4)  // Prescaler off
+
+#define RCC_CFGR0_SWS               (0b11 << 2)
 
 
 #define RCC_APB2PCENR               (*(volatile unsigned int*)(RCC_CTLR_BASE + 0x18))   // PB2 Peripheral Clock Enable Register
@@ -77,6 +80,7 @@ int main(void) {
     RCC_CTLR = (RCC_CTLR & RCC_CTRL_PLL_MASK) | RCC_CTLR_PLLOFF;
     
     // TODO Wait for HSE is ready
+    while((RCC_CTLR & RCC_CTRL_HSERDY)){}
 
     // Setup HSE for clock source for PLL
     RCC_CFGR0 = (RCC_CFGR0 & RCC_CFGR0_PLLSRC_MASK) | RCC_CFGR0_PLLSRC;
@@ -85,12 +89,11 @@ int main(void) {
 
     // Setup SYSCLK
     // Wait till PLL is ready
-    while((RCC_CTLR & RCC_CTLR_PLLRDY) == 0){}
+    while((RCC_CTLR & RCC_CTRL_PLLRDY) == 0){}
     RCC_CFGR0 = (RCC_CFGR0 & RCC_CFGR0_SW_MASK) | RCC_CFGR0_SW;
     //TODO Wait till PLL is used as system clock source
-    while ((RCC_CFGR0 & RCC_SWS) != 0b10)
-    {
-    }
+    while ((RCC_CFGR0 & RCC_CFGR0_SWS) != (0b10 << 2) ){}
+
     // Set HB clock source prescaler off
     RCC_CFGR0 = (RCC_CFGR0 & RCC_CFGR0_HPRE_MASK) | RCC_CFGR0_HPRE;
 
