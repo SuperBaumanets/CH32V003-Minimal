@@ -1,12 +1,13 @@
 # Tools
 CC = riscv64-elf-gcc
 OBJCOPY = riscv64-elf-objcopy
+OBJDUMP = riscv64-elf-objdump
 FLASH = wlink
 
 # Flags
 ARCH = rv32emc
 ABI = ilp32e
-CFLAGS = -march=$(ARCH) -mabi=$(ABI) -nostdlib
+CFLAGS = -march=$(ARCH) -mabi=$(ABI) -nostdlib -g
 CFLAGS += -Iinclude -Os -Wall -Wextra
 LDFLAGS = -T lib/ch32v003f4p6.ld
 
@@ -18,6 +19,7 @@ BUILD_DIR = build
 # Output files
 ELF = $(BUILD_DIR)/$(TARGET).elf
 BIN = $(BUILD_DIR)/$(TARGET).bin
+DUMP = $(BUILD_DIR)/$(TARGET).elf.dump
 
 # Default target
 all: $(BIN)
@@ -30,6 +32,7 @@ $(BUILD_DIR):
 $(BIN): $(SRC_DIR)/main.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(ELF) $<
 	$(OBJCOPY) -O binary $(ELF) $@
+	$(OBJDUMP) -S -d -h $(ELF) > $(DUMP)
 
 # Flash to device
 flash: $(BIN)
