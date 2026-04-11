@@ -20,6 +20,10 @@ BUILD_MAP = $(BUILD_DIR)/$(TARGET).map
 C_SOURCES =  \
 src/main.c 
 
+# ASM sources
+ASM_SOURCES =  \
+startup.S
+
 # binaries
 PREFIX = riscv64-elf-
 CC = $(PREFIX)gcc
@@ -41,7 +45,7 @@ ARCH = -march=rv32emc
 ABI = -mabi=ilp32e
 
 # compile gcc flags
-CFLAGS = $(ARCH) $(ABI) -g
+CFLAGS = $(ARCH) $(ABI) -nostdlib -g
 
 CFLAGS += -Iinclude -Os -Wall -Wextra
 
@@ -50,6 +54,7 @@ CFLAGS += -Iinclude -Os -Wall -Wextra
 #######################################
 # link script
 LDSCRIPT = ch32v003f4p6.ld
+
 LIBS = -nostdlib 
 
 LDFLAGS = $(ARCH) $(ABI) -T $(LDSCRIPT) -nostartfiles $(LIBS) -Wl,-Map=$(BUILD_MAP)
@@ -60,9 +65,16 @@ LDFLAGS = $(ARCH) $(ABI) -T $(LDSCRIPT) -nostartfiles $(LIBS) -Wl,-Map=$(BUILD_M
 # list of С
 OBJECTS = $(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 vpath %.c $(sort $(dir $(C_SOURCES)))
+# list of ASM 
+OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASM_SOURCES:.S=.o)))
+vpath %.s $(sort $(dir $(ASM_SOURCES)))
 
 $(BUILD_DIR)/%.o: %.c | $(BUILD_DIR) 
 	$(CC) -c $(CFLAGS) $< -o $@
+
+$(BUILD_DIR)/%.o: %.S | $(BUILD_DIR)
+	$(CC) -c $(CFLAGS) $< -o $@
+
 
 $(BUILD_ELF): $(OBJECTS)
 	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
