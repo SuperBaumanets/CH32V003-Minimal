@@ -26,7 +26,7 @@ all: $(BIN)
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-# Build firmware from assembly file (изменено с .c на .S)
+# Build firmware from assembly file
 $(BIN): $(SRC_DIR)/main.S | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(ELF) $<
 	$(OBJCOPY) -O binary $(ELF) $@
