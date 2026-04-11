@@ -7,7 +7,7 @@ FLASH = wlink
 # Flags
 ARCH = rv32emc
 ABI = ilp32e
-CFLAGS = -march=$(ARCH) -mabi=$(ABI) -nostdlib
+CFLAGS = -march=$(ARCH) -mabi=$(ABI) -nostdlib -g
 CFLAGS += -Iinclude -Os -Wall -Wextra
 LDFLAGS = -T lib/ch32v003f4p6.ld
 

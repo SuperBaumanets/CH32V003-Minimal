@@ -7,13 +7,12 @@
 #define RCC_CTLR_PLLOFF             (0b0 << 24)     // PLL clock enable control bit.  Turn off the PLL clock
 
 #define RCC_CTRL_PLLRDY             (0b1 << 25)     // PLL clock-ready lock flag bit.
-#define RCC_CTRL_HSERDY             (0b1 << 17)     // External high-speed crystal oscillation stabilization ready
 #define RCC_CTRL_HSIRDY             (0b1 << 1)      // Internal high-speed clock (24MHz) Stable Ready
 
 #define RCC_CFGR0                   (*(volatile unsigned int*)(RCC_CTLR_BASE + 0x04))   // Clock configuration register 0
 
 #define RCC_CFGR0_PLLSRC_MASK       ~(0b1 << 16)    // Mask input clock source for PLL
-#define RCC_CFGR0_PLLSRC            (0xb1 << 16)     // HSE is fed into PLL without dividing the frequency
+#define RCC_CFGR0_PLLSRC            (0xb0 << 16)    // HSI HSI is not divided and sent to PLL
 
 #define RCC_CFGR0_SW_MASK           ~(0x3 << 0)     // MASK select the system clock source.
 #define RCC_CFGR0_SW                (0b10 << 0)     // Select the system clock source. PLL output as system clock
@@ -22,7 +21,7 @@
 #define RCC_CFGR0_HPRE              (0xb0000 << 4)  // Prescaler off
 
 #define RCC_CFGR0_SWS               (0b11 << 2)     // System clock (SYSCLK) status (hardware set) Not available
-#define RCC_CFGR0_SWS_PLL           (0b10 << 2)     // System clock (SYSCLK) status (hardware set)
+#define RCC_CFGR0_SWS_PLL           (0b10 << 2)     // The system clock source is a PLL
 
 
 #define RCC_APB2PCENR               (*(volatile unsigned int*)(RCC_CTLR_BASE + 0x18))   // PB2 Peripheral Clock Enable Register
@@ -80,10 +79,10 @@ int main(void) {
     // Turn off PLL
     RCC_CTLR = (RCC_CTLR & RCC_CTRL_PLL_MASK) | RCC_CTLR_PLLOFF;
     
-    // Wait for HSE is ready
-    while((RCC_CTLR & RCC_CTRL_HSERDY)){}
+    // Wait for HSI is ready
+    while((RCC_CTLR & RCC_CTRL_HSIRDY)){}
 
-    // Setup HSE for clock source for PLL
+    // Setup HSI for clock source for PLL
     RCC_CFGR0 = (RCC_CFGR0 & RCC_CFGR0_PLLSRC_MASK) | RCC_CFGR0_PLLSRC;
     // Turn on PLL
     RCC_CTLR = (RCC_CTLR & RCC_CTRL_PLL_MASK) | RCC_CTLR_PLLON;
@@ -98,7 +97,6 @@ int main(void) {
     // Set HB clock source prescaler off
     RCC_CFGR0 = (RCC_CFGR0 & RCC_CFGR0_HPRE_MASK) | RCC_CFGR0_HPRE;
 
-    /*
     // Setup PB2 peripheral clock
     RCC_APB2PCENR = (RCC_APB2PCENR & RCC_APB2PCENR_USART1EN_MASK) | RCC_APB2PCENR_USART1EN;
     RCC_APB2PCENR = (RCC_APB2PCENR & RCC_APB2PCENR_IOPDRST_MASK) | RCC_APB2PCENR_IOPDRST;
@@ -120,11 +118,14 @@ int main(void) {
     // Enable UART
     USART_CTRL1 = (USART_CTRL1 & USART_CTRL1_UE_MASK) | USART_CTRL1_UE_E;
     
-    */
     while(1){
        
         while(!(USART_STAT & USART_STAT_TC));
         USART_DATA = 0xffffffff;
+
+        for(unsigned int i = 0; i < 10000; i++){
+            asm volatile("nop");
+        }
     }
     
 }

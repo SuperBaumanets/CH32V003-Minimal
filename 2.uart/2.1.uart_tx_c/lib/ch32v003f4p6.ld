@@ -1,49 +1,31 @@
-MEMORY{
-	FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 16K
-	RAM (xrw)  : ORIGIN = 0x20000000, LENGTH = 2K
+MEMORY
+{
+    FLASH (rx) : ORIGIN = 0x08000000, LENGTH = 16K
+    RAM (rwx) : ORIGIN = 0x20000000, LENGTH = 2K
 }
 
-_estack = ORIGIN(RAM) + LENGTH(RAM);
-
-SECTIONS{
-    .init :{ 
-      . = ALIGN(4);
-      *(.init)
-      . = ALIGN(4);
-    } >FLASH
-
-    .text :{
-      . = ALIGN(4);
-      *(.text .text*)
-      *(.rodata .rodata*)
-      *(.srodata .srodata*)
-      . = ALIGN(4);
-    } >FLASH
-
-    .sdata :{
-      . = ALIGN(4);
-      _sdata = .;
-    } >RAM
-
-    .sidata :{
-      . = ALIGN(4); 
-      _sidata = .;
-    } >FLASH
-
-    .data :{
-      . = ALIGN(4);
-      *(.data .data.*)
-      *(.sdata .sdata.*)
-      . = ALIGN(4);
-      _edata = .;
-    } >RAM AT>FLASH
-
-    .bss :{
-      . = ALIGN(4);
-      _sbss = .;
-      *(.sbss*)
-      *(.bss*)
-      . = ALIGN(4);
-      _ebss = .;
-    } >RAM
+SECTIONS
+{    
+    .text : {
+        *(.text)
+        *(.text*)
+        . = ALIGN(4);
+    } > FLASH
+    
+    .data : AT(ADDR(.text) + SIZEOF(.text)){
+    _data_start = .;
+    *(.data*)
+    . = ALIGN(4);
+    _data_end = .;
+  } > RAM
+    
+   .bss : {
+    _bss_start = .;
+    *(.bss*)
+    . = ALIGN(4);
+    _bss_end = .;
+  } > RAM
 }
+
+PROVIDE(_stack_end = ORIGIN(RAM) + LENGTH(RAM));
+PROVIDE(_data_load = LOADADDR(.data));
