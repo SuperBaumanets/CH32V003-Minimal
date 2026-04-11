@@ -9,7 +9,7 @@ ARCH = rv32emc
 ABI = ilp32e
 CFLAGS = -march=$(ARCH) -mabi=$(ABI) -nostdlib -g
 CFLAGS += -Iinclude -Os -Wall -Wextra
-LDFLAGS = -T lib/ch32v003f4p6.ld
+LDFLAGS = -T lib/ch32v003f4p6.ld -nostartfiles -Wl,-Map=$(BUILD_DIR)/$(TARGET).map
 
 # Files and directories
 TARGET = firmware
@@ -20,16 +20,17 @@ BUILD_DIR = build
 ELF = $(BUILD_DIR)/$(TARGET).elf
 BIN = $(BUILD_DIR)/$(TARGET).bin
 DUMP = $(BUILD_DIR)/$(TARGET).elf.dump
+MAP = $(BUILD_DIR)/$(TARGET).map
 
 # Default target
-all: $(BIN)
+all: $(BIN) $(MAP)
 
 # Create build directory
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
 # Build firmware directly from main.c
-$(BIN): $(SRC_DIR)/main.c | $(BUILD_DIR)
+$(BIN) $(MAP): $(SRC_DIR)/main.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(ELF) $<
 	$(OBJCOPY) -O binary $(ELF) $@
 	$(OBJDUMP) -S -d -h $(ELF) > $(DUMP)
