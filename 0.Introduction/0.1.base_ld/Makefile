@@ -1,45 +1,95 @@
-# Tools
-CC = riscv64-elf-gcc
-OBJCOPY = riscv64-elf-objcopy
-OBJDUMP = riscv64-elf-objdump
-FLASH = wlink
-
-# Flags
-ARCH = rv32emc
-ABI = ilp32e
-CFLAGS = -march=$(ARCH) -mabi=$(ABI) -nostdlib -g
-CFLAGS += -Iinclude -Os -Wall -Wextra
-LDFLAGS = -T lib/ch32v003f4p6.ld -nostartfiles -Wl,-Map=$(BUILD_DIR)/$(TARGET).map
-
-# Files and directories
+# target
 TARGET = firmware
-SRC_DIR = src
+
+#######################################
+# paths
+#######################################
+# Build path
 BUILD_DIR = build
 
-# Output files
-ELF = $(BUILD_DIR)/$(TARGET).elf
-BIN = $(BUILD_DIR)/$(TARGET).bin
-DUMP = $(BUILD_DIR)/$(TARGET).elf.dump
-MAP = $(BUILD_DIR)/$(TARGET).map
+# Out files
+BUILD_ELF = $(BUILD_DIR)/$(TARGET).elf
+BUILD_BIN = $(BUILD_DIR)/$(TARGET).bin
+BUILD_DUMP = $(BUILD_DIR)/$(TARGET).elf.dump
+BUILD_MAP = $(BUILD_DIR)/$(TARGET).map
 
-# Default target
-all: $(BIN) $(MAP)
+######################################
+# source
+######################################
+# C sources
+C_SOURCES =  \
+src/main.c 
 
+# binaries
+PREFIX = riscv64-elf-
+CC = $(PREFIX)gcc
+CP = $(PREFIX)objcopy
+DP = $(PREFIX)objdump
+BIN = $(CP) -O binary -S 
+DUMP = $(DP) -S -d -h
+
+# programmer
+PROGRAMMER = wlink
+
+#######################################
+# CFLAGS
+#######################################
+# arch
+ARCH = -march=rv32emc
+
+# abi
+ABI = -mabi=ilp32e
+
+# compile gcc flags
+CFLAGS = $(ARCH) $(ABI) -g
+
+CFLAGS += -Iinclude -Os -Wall -Wextra
+
+#######################################
+# LDFLAGS
+#######################################
+# link script
+LDSCRIPT = ch32v003f4p6.ld
+LIBS = -nostdlib 
+
+LDFLAGS = $(ARCH) $(ABI) -T $(LDSCRIPT) -nostartfiles $(LIBS) -Wl,-Map=$(BUILD_MAP)
+
+#######################################
+# build the application
+#######################################
+# list of С
+OBJECTS = $(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
+vpath %.c $(sort $(dir $(C_SOURCES)))
+
+$(BUILD_DIR)/%.o: %.c | $(BUILD_DIR) 
+	$(CC) -c $(CFLAGS) $< -o $@
+
+$(BUILD_ELF): $(OBJECTS)
+	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+	
+$(BUILD_BIN): $(BUILD_ELF) | $(BUILD_DIR)
+	$(BIN) $< $@
+
+$(BUILD_DUMP): $(BUILD_ELF) | $(BUILD_DIR)
+	$(DUMP) $(BUILD_ELF) > $(BUILD_DUMP)
+	
 # Create build directory
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-# Build firmware directly from main.c
-$(BIN) $(MAP): $(SRC_DIR)/main.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(ELF) $<
-	$(OBJCOPY) -O binary $(ELF) $@
-	$(OBJDUMP) -S -d -h $(ELF) > $(DUMP)
+# Default target
+all: $(BUILD_BIN) $(BUILD_DUMP)
 
+#######################################
+# program
+#######################################
 # Flash to device
-flash: $(BIN)
-	$(FLASH) flash $< --address 0x08000000
+flash: $(BUILD_BIN)
+	$(PROGRAMMER) flash $< --address 0x08000000
 
-# Clean build artifacts and remove build directory
+#######################################
+# clean up
+#######################################
 clean:
 	rm -rf $(BUILD_DIR)
 
