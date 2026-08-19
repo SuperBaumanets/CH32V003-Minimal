@@ -98,6 +98,7 @@ all: $(BUILD_BIN) $(BUILD_DUMP)
 # Flash to device
 flash: $(BUILD_BIN)
 	$(PROGRAMMER) flash $< --address 0x08000000
+	$(PROGRAMMER) reset
 
 #######################################
 # clean up

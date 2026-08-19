@@ -2,17 +2,25 @@
 
 #define RCC_CTLR                    (*((volatile unsigned int*)(RCC_CTLR_BASE + 0x00)))   // Clock control register
 
-#define RCC_CTRL_PLL_MASK           ~(0b1 << 24)    // Mask PLL clock enable bit
+#define RCC_CTLR_PLL_MASK           ~(0b1 << 24)    // Mask PLL clock enable bit
 #define RCC_CTLR_PLLON              (0b1 << 24)     // PLL clock enable control bit.  Enables the PLL clock
 #define RCC_CTLR_PLLOFF             (0b0 << 24)     // PLL clock enable control bit.  Turn off the PLL clock
 
 #define RCC_CTRL_PLLRDY             (0b1 << 25)     // PLL clock-ready lock flag bit.
+
+#define RCC_CTLR_HSION_MASK         ~(0b1 << 0)    // Mask PLL clock enable bit
+#define RCC_CTLR_HSION              (0b1 << 0)     // PLL clock enable control bit.  Enables the PLL clock
+#define RCC_CTLR_HSIOFF             (0b0 << 0)     // PLL clock enable control bit.  Turn off the PLL clock
+
 #define RCC_CTRL_HSIRDY             (0b1 << 1)      // Internal high-speed clock (24MHz) Stable Ready
 
-#define RCC_CFGR0                   (*(volatile unsigned int*)(RCC_CTLR_BASE + 0x04))   // Clock configuration register 0
+#define RCC_CTRL_CSSON_MASK        ~(0b1 << 19)     // Mask lock security system enable control bit.
+#define RCC_CTRL_CSSON              (0b1 << 19)     // lock security system enable control bit.
+
+#define RCC_CFGR0                   (*((volatile unsigned int*)(RCC_CTLR_BASE + 0x04)))   // Clock configuration register 0
 
 #define RCC_CFGR0_PLLSRC_MASK       ~(0b1 << 16)    // Mask input clock source for PLL
-#define RCC_CFGR0_PLLSRC            (0xb0 << 16)    // HSI HSI is not divided and sent to PLL
+#define RCC_CFGR0_PLLSRC            (0xb0 << 16)     // HSI is not divided and sent to PLL.
 
 #define RCC_CFGR0_SW_MASK           ~(0x3 << 0)     // MASK select the system clock source.
 #define RCC_CFGR0_SW                (0b10 << 0)     // Select the system clock source. PLL output as system clock
@@ -21,7 +29,7 @@
 #define RCC_CFGR0_HPRE              (0xb0000 << 4)  // Prescaler off
 
 #define RCC_CFGR0_SWS               (0b11 << 2)     // System clock (SYSCLK) status (hardware set) Not available
-#define RCC_CFGR0_SWS_PLL           (0b10 << 2)     // The system clock source is a PLL
+#define RCC_CFGR0_SWS_PLL           (0b10 << 2)     // System clock (SYSCLK) status (hardware set)
 
 
 #define RCC_APB2PCENR               (*(volatile unsigned int*)(RCC_CTLR_BASE + 0x18))   // PB2 Peripheral Clock Enable Register
@@ -77,19 +85,24 @@ int main(void) {
 
     // Setup PLL clock
     // Turn off PLL
-    RCC_CTLR = (RCC_CTLR & RCC_CTRL_PLL_MASK) | RCC_CTLR_PLLOFF;
+    RCC_CTLR = (RCC_CTLR & RCC_CTLR_PLL_MASK) | RCC_CTLR_PLLOFF;
+
+    // Turn on HSI
+    RCC_CTLR = (RCC_CTLR & RCC_CTLR_HSION_MASK) | RCC_CTLR_HSION;
     
     // Wait for HSI is ready
-    while((RCC_CTLR & RCC_CTRL_HSIRDY)){}
+    while(!(RCC_CTLR & RCC_CTRL_HSIRDY)){}
+    // Enable clock security system
+    RCC_CTLR = (RCC_CTLR & RCC_CTRL_CSSON_MASK) | RCC_CTRL_CSSON;
 
     // Setup HSI for clock source for PLL
     RCC_CFGR0 = (RCC_CFGR0 & RCC_CFGR0_PLLSRC_MASK) | RCC_CFGR0_PLLSRC;
     // Turn on PLL
-    RCC_CTLR = (RCC_CTLR & RCC_CTRL_PLL_MASK) | RCC_CTLR_PLLON;
+    RCC_CTLR = (RCC_CTLR & RCC_CTLR_PLL_MASK) | RCC_CTLR_PLLON;
 
     // Setup SYSCLK
     // Wait till PLL is ready
-    while(!(RCC_CTLR & (unsigned int)RCC_CTRL_PLLRDY)){}
+    while(!(RCC_CTLR & RCC_CTRL_PLLRDY)){}
     RCC_CFGR0 = (RCC_CFGR0 & RCC_CFGR0_SW_MASK) | RCC_CFGR0_SW;
     //TODO Wait till PLL is used as system clock source
     while ((RCC_CFGR0 & RCC_CFGR0_SWS) != RCC_CFGR0_SWS_PLL ){}
@@ -122,10 +135,6 @@ int main(void) {
        
         while(!(USART_STAT & USART_STAT_TC));
         USART_DATA = 0xffffffff;
-
-        for(unsigned int i = 0; i < 10000; i++){
-            asm volatile("nop");
-        }
     }
     
 }
