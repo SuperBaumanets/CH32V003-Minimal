@@ -1,6 +1,7 @@
 # Prerequisites
 *.d
 
+
 # Object files
 *.o
 *.ko
@@ -56,3 +57,4 @@ dkms.conf
 
 # Directories
 build
+.vscode
