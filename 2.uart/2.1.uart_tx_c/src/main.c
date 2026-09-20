@@ -17,6 +17,7 @@
 #define RCC_CTRL_CSSON_MASK        ~(0b1 << 19)     // Mask lock security system enable control bit.
 #define RCC_CTRL_CSSON              (0b1 << 19)     // lock security system enable control bit.
 
+
 #define RCC_CFGR0                   (*((volatile unsigned int*)(RCC_CTLR_BASE + 0x04)))   // Clock configuration register 0
 
 #define RCC_CFGR0_PLLSRC_MASK       ~(0b1 << 16)    // Mask input clock source for PLL
@@ -34,22 +35,39 @@
 
 #define RCC_APB2PCENR               (*(volatile unsigned int*)(RCC_CTLR_BASE + 0x18))   // PB2 Peripheral Clock Enable Register
 
-#define RCC_APB2PCENR_USART1EN_MASK ~(0b1 << 14)    // MASK USART1 interface clock enable bit
+#define RCC_APB2PCENR_USART1EN_MASK ~(0b1 << 14)    // Mask USART1 interface clock enable bit
 #define RCC_APB2PCENR_USART1EN      (0b1 << 14)     // USART1 interface clock enable bit
 
-#define RCC_APB2PCENR_IOPDRST_MASK  ~(0b1 << 5)     // PD port module reset control for I/O.
-#define RCC_APB2PCENR_IOPDRST       (0b1 << 5)      // PD port module reset control for I/O.
+#define RCC_APB2PCENR_IOPDEN_MASK   ~(0b1 << 5)     // MAsk PD port module clock enable bit for I/O.
+#define RCC_APB2PCENR_IOPDEN        (0b1 << 5)      // PD port module clock enable bit for I/O.
+
+#define RCC_APB2PCENR_AFIOEN_MASK   ~(0b1 << 0)     // Mask I/O auxiliary function module clock enable bit.
+#define RCC_APB2PCENR_AFIOEN        (0b1 << 0)      // I/O auxiliary function module clock enable bit.
 
 
 #define USART_PD_TX                  5              // USART TX PD5
+#define USART_PD_0                   0              // PD0
 
 
-#define GPIOD_CFGLR                 (*(volatile unsigned int*)0x40011400)   // PD port configuration register low
+#define GPIOD_CFGLR_BASE            0x40011400   // PD port configuration register low
+
+#define GPIOD_CFGLR                  (*(volatile unsigned int*)(GPIOD_CFGLR_BASE + 0x0))   // PD port configuration register low
 
 #define GPIOD_CFGLR_TX_MASK         ~(0xF << (4 * USART_PD_TX))             // Mask MODE5 and CNF5
 #define GPIOD_CFGLR_TX_MODE         0b01            // Output mode, maximum speed 10MHz
-#define GPIOD_CFGLR_TX_CNF          0b10            // Multiplexed function push-pull output mode.
-#define GPIOD_CFGLR_TX_SET          ((GPIOD_CFGLR_TX_CNF | GPIOD_CFGLR_TX_MODE) << (4 * USART_PD_TX))
+#define GPIOD_CFGLR_TX_CNF          0b10            // Multiplexed function push-pull output mode
+#define GPIOD_CFGLR_TX_SET_MODE     (GPIOD_CFGLR_TX_MODE << (4 * USART_PD_TX))
+#define GPIOD_CFGLR_TX_SET_CNF      (GPIOD_CFGLR_TX_CNF << (4 * USART_PD_TX + 2))
+
+#define GPIOD_CFGLR_PD0_MODE         0b01            // Output mode, maximum speed 10MHz
+#define GPIOD_CFGLR_PD0_CNF          0b00            // Unifersal push-pull output mode
+#define GPIOD_CFGLR_PD0_SET_MODE     (GPIOD_CFGLR_TX_MODE << (4 * USART_PD_0))
+#define GPIOD_CFGLR_PD0_SET_CNF      (GPIOD_CFGLR_TX_CNF << (4 * USART_PD_0 + 2))
+
+#define GPIOD_OUTDR                  (*(volatile unsigned int*)(GPIOD_CFGLR_BASE + 0x0C))
+
+#define GPIOD_OUTDR_PullUp_D0        (0b1 << 0);     // Pull-up input
+#define GPIOD_OUTDR_PullDown_D0      (0b0 << 0)      // Pull-down input
 
 
 #define USART_BASE                  0x40013800
@@ -79,7 +97,8 @@
 #define USART_CTRL2_STOP_MASK       ~(0xC << 12)    // Mask STOP bits 
 #define USART_CTRL2_STOP            (0b00 << 12)    // STOP bits
 
-//static const unsigned char data_s = 'w';
+
+#define DATA_SIZE                12
 
 int main(void) {
 
@@ -104,7 +123,7 @@ int main(void) {
     // Wait till PLL is ready
     while(!(RCC_CTLR & RCC_CTRL_PLLRDY)){}
     RCC_CFGR0 = (RCC_CFGR0 & RCC_CFGR0_SW_MASK) | RCC_CFGR0_SW;
-    //TODO Wait till PLL is used as system clock source
+    // Wait till PLL is used as system clock source
     while ((RCC_CFGR0 & RCC_CFGR0_SWS) != RCC_CFGR0_SWS_PLL ){}
 
     // Set HB clock source prescaler off
@@ -112,14 +131,21 @@ int main(void) {
 
     // Setup PB2 peripheral clock
     RCC_APB2PCENR = (RCC_APB2PCENR & RCC_APB2PCENR_USART1EN_MASK) | RCC_APB2PCENR_USART1EN;
-    RCC_APB2PCENR = (RCC_APB2PCENR & RCC_APB2PCENR_IOPDRST_MASK) | RCC_APB2PCENR_IOPDRST;
+    RCC_APB2PCENR = (RCC_APB2PCENR & RCC_APB2PCENR_IOPDEN_MASK) | RCC_APB2PCENR_IOPDEN;
+    RCC_APB2PCENR = (RCC_APB2PCENR & RCC_APB2PCENR_AFIOEN_MASK) | RCC_APB2PCENR_AFIOEN;
 
     // Setup GPIO
-    GPIOD_CFGLR = (GPIOD_CFGLR & GPIOD_CFGLR_TX_MASK) | GPIOD_CFGLR_TX_SET;
+    GPIOD_CFGLR = (GPIOD_CFGLR & GPIOD_CFGLR_TX_MASK);
+    GPIOD_CFGLR |= (GPIOD_CFGLR_TX_SET_MODE | GPIOD_CFGLR_PD0_SET_MODE);
+    GPIOD_CFGLR |= (GPIOD_CFGLR_TX_SET_CNF |GPIOD_CFGLR_PD0_SET_CNF);
+
 
     // Setup UART
     // Setup baudrate
-    USART_BRR = (USART_BRR_DIVM(0x138) | USART_BRR_DIVF(0x8));
+    // USARTDIV = 48 000 000 / (16 * 115200) = 48 000 000 / 1 843 200 = 26.041666666666668
+    // DIV_M = 26 (hex -> 0x1a)
+    // DIV_F = 0.041666666666668 * 16 = 1 (hex -> 0x1)
+    USART_BRR = (USART_BRR_DIVM(0x1a) | USART_BRR_DIVF(0x1));
     // Disable UART
     USART_CTRL1 = (USART_CTRL1 & USART_CTRL1_UE_MASK) | USART_CTRL1_UE_C;
     // 8 data bits
@@ -130,19 +156,30 @@ int main(void) {
     USART_CTRL2 = (USART_CTRL2 & USART_CTRL2_STOP_MASK) | USART_CTRL2_STOP;
     // Enable UART
     USART_CTRL1 = (USART_CTRL1 & USART_CTRL1_UE_MASK) | USART_CTRL1_UE_E;
-    
-    while(1){
-       
-        while(!(USART_STAT & USART_STAT_TC));
-        USART_DATA = 0xffffffff;
-    }
-    
-}
 
-/*
-RCC_APB2PCENR = 0b 00000000 00000000 01011010 00110101;
-> wlink dump 0x40021018 4
-> 35 5a 00 00
-                   00000000 00000000 01011010 00110101
-                                      (0x5a)   (0x35)
-*/
+    static const char data[DATA_SIZE] = "Hello word\n";
+
+    while(1){
+
+         // Port Output Register
+        GPIOD_OUTDR = GPIOD_OUTDR_PullUp_D0;
+
+        for(unsigned int i = 0; i < 500000; i++){
+            asm volatile("nop");
+        }
+
+        // Port Output Register
+        GPIOD_OUTDR = GPIOD_OUTDR_PullDown_D0;
+
+        for(unsigned int i = 0; i < 500000; i++){
+            asm volatile("nop");
+        }
+
+        for(int i = 0; i < DATA_SIZE; i++){
+            while(!(USART_STAT & USART_STAT_TC));
+            USART_DATA = data[i];
+        }
+    }
+
+    return 0;
+}
