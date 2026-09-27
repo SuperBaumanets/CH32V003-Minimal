@@ -32,7 +32,7 @@ make flash
 
 После успешной загрузки светодиоды, подключенные к выбранным пинам, должены начать работать по алгоритму светофора.
 
-![Работа прошивки](../misc/img/1.2.blink_traffic_light_c/1.2.blink_traffic_light_work.gif)
+![Работа прошивки](../../misc/img/1.2.blink_traffic_light_c/1.2.blink_traffic_light_work.gif)
 
 ## Основные команды Makefile
 
@@ -48,4 +48,4 @@ make flash
 Пин PD3 ---[ резистор 220-470 Ом ]---|>|---[ светодиод ]--- GND  
 Пин PD2 ---[ резистор 220-470 Ом ]---|>|---[ светодиод ]--- GND  
 
-![Схема](../misc/img/1.2.blink_traffic_light_c/1.2.blink_traffic_light_scheme.jpg)
+![Схема](../../misc/img/1.2.blink_traffic_light_c/1.2.blink_traffic_light_scheme.jpg)
