@@ -47,7 +47,7 @@ ABI = -mabi=ilp32e
 # compile gcc flags
 CFLAGS = $(ARCH) $(ABI) -nostdlib -g
 
-CFLAGS += -Iinclude -Os -Wall -Wextra
+CFLAGS += -Os -Wall -Wextra
 
 #######################################
 # LDFLAGS
