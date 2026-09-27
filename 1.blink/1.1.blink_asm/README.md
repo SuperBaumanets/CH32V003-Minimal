@@ -32,7 +32,7 @@ make flash
 
 После успешной загрузки светодиод, подключенный к выбранному пину, должен начать мигать.
 
-![Работа прошивки](../misc/img/1.1.blink_c/1.1.blink_work.gif)
+![Работа прошивки](../../misc/img/1.1.blink_c/1.1.blink_work.gif)
 
 ## Основные команды Makefile
 
@@ -46,4 +46,4 @@ make flash
 
 Пин PD4 ---[ резистор 220-470 Ом ]---|>|---[ светодиод ]--- GND
 
-![Схема](../misc/img/1.1.blink_c/1.1.blink_scheme.jpg)
+![Схема](../../misc/img/1.1.blink_c/1.1.blink_scheme.jpg)
